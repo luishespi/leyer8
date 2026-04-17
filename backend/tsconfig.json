@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,8 +14,7 @@
     "declaration": false,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "ignoreDeprecations": "6.0"
+    "isolatedModules": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

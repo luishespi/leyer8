@@ -1,8 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 
-import { config, isDev } from './config';
-import healthRoutes from './routes/health';
+import { config, isDev } from './config.js';
+import healthRoutes from './routes/health.js';
 
 /**
  * Bootstrap del servidor Fastify.
