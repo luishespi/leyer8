@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/screens/auth_gate.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -7,7 +11,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const Leyer8App());
+  runApp(
+    const ProviderScope(
+      child: Leyer8App(),
+    ),
+  );
 }
 
 class Leyer8App extends StatelessWidget {
@@ -18,14 +26,8 @@ class Leyer8App extends StatelessWidget {
     return MaterialApp(
       title: 'Leyer8',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'Firebase conectado ✓',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ),
-      ),
+      theme: AppTheme.light,
+      home: const AuthGate(),
     );
   }
 }
