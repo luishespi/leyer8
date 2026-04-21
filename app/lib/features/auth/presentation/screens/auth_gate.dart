@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:leyer8/features/auth/presentation/screens/router_setup_screen.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -11,16 +12,14 @@ import 'email_verification_screen.dart';
 import 'login_screen.dart';
 
 /// Guard raíz de la app. Decide qué pantalla mostrar según el estado
-/// de autenticación y provisión.
+/// de autenticación, provisión y onboarding.
 ///
 /// Flujo:
-///   sin sesión              → LoginScreen
-///   sesión sin verificar    → EmailVerificationScreen
-///   sesión verificada, sin perfil NextDNS → ProvisioningScreen
-///   sesión verificada + perfil listo      → _DashboardPlaceholder
-///
-/// Escucha reactivamente [authStateProvider] y [userDocProvider],
-/// por lo que cualquier cambio reenruta automáticamente.
+///   sin sesión                              → LoginScreen
+///   sesión sin verificar                    → EmailVerificationScreen
+///   sesión verificada, sin perfil NextDNS   → ProvisioningScreen
+///   sesión verificada, perfil listo, onboarding pendiente → RouterSetupScreen
+///   sesión verificada, perfil listo, onboarding completo  → DashboardPlaceholder
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
 
@@ -39,19 +38,18 @@ class AuthGate extends ConsumerWidget {
           return const EmailVerificationScreen();
         }
 
-        // Usuario verificado — revisar si ya tiene perfil NextDNS.
-        return _PostVerificationGate();
+        // Usuario verificado — revisar estado en Firestore.
+        return const _PostVerificationGate();
       },
     );
   }
 }
 
 /// Gate secundario que revisa el documento de Firestore para decidir
-/// si mostrar la pantalla de provisión o el dashboard.
-///
-/// Separado del AuthGate principal para que el StreamProvider de
-/// userDoc solo se active cuando hay un usuario verificado.
+/// si mostrar provisión, router setup, o dashboard.
 class _PostVerificationGate extends ConsumerWidget {
+  const _PostVerificationGate();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userDocAsync = ref.watch(userDocProvider);
@@ -61,28 +59,33 @@ class _PostVerificationGate extends ConsumerWidget {
       error: (_, __) => const ProvisioningScreen(),
       data: (userData) {
         if (userData == null) {
-          // Doc no existe todavía — puede pasar si Firestore aún no
-          // replicó tras el registro. Mostrar provisioning que reintenta.
           return const ProvisioningScreen();
         }
 
         final profileId = userData['nextdnsProfileId'] as String?;
         final status = userData['provisioningStatus'] as String?;
-
-        if (profileId != null && status == 'completed') {
-          // Perfil listo → dashboard (Día 5 lo reemplaza por RouterSetup).
-          return const _DashboardPlaceholder();
-        }
+        final onboardingCompleted =
+            userData['onboardingCompleted'] as bool? ?? false;
 
         // Sin perfil o provisión incompleta → provisionar.
-        return const ProvisioningScreen();
+        if (profileId == null || status != 'completed') {
+          return const ProvisioningScreen();
+        }
+
+        // Perfil listo, onboarding pendiente → configurar router.
+        if (!onboardingCompleted) {
+          return const RouterSetupScreen();
+        }
+
+        // Todo completo → dashboard.
+        return const _DashboardPlaceholder();
       },
     );
   }
 }
 
 // ============================================================
-// Splash mientras Firebase inicializa la sesión
+// Splash mientras carga
 // ============================================================
 
 class _SplashLoading extends StatelessWidget {
@@ -107,7 +110,7 @@ class _SplashLoading extends StatelessWidget {
 }
 
 // ============================================================
-// Placeholder del dashboard — se reemplaza en Día 5
+// Dashboard placeholder — se reemplaza en Fase 2
 // ============================================================
 
 class _DashboardPlaceholder extends ConsumerWidget {
@@ -131,7 +134,7 @@ class _DashboardPlaceholder extends ConsumerWidget {
                 Container(
                   width: 72,
                   height: 72,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.secondaryContainer,
                     shape: BoxShape.circle,
                   ),
@@ -159,9 +162,9 @@ class _DashboardPlaceholder extends ConsumerWidget {
                   style: AppTypography.bodySmall,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: AppSpacing.xl),
                 Text(
-                  'Siguiente paso: configurar el DNS\nen tu router (Día 5).',
+                  'Tu red está protegida.\nEl panel de control llega en Fase 2.',
                   style: AppTypography.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
