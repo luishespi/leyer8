@@ -1,8 +1,10 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 
 import { config, isDev } from './config.js';
 import healthRoutes from './routes/health.js';
+import profileRoutes from './routes/profiles.js';
 
 /**
  * Bootstrap del servidor Fastify.
@@ -12,6 +14,8 @@ import healthRoutes from './routes/health.js';
  *   En prod se restringirá al dominio de la app si aplica.
  * - Host `0.0.0.0`: requerido para que Railway pueda rutear tráfico al
  *   contenedor. `localhost` solo escucha dentro del contenedor.
+ * - Rate limit: 30 req/min por IP en endpoints de API. Prevención de abuso
+ *   del endpoint de provisión (crear perfiles NextDNS cuesta cuota).
  */
 const app = Fastify({
   logger: isDev
@@ -31,10 +35,15 @@ async function bootstrap(): Promise<void> {
     origin: isDev ? true : false,
   });
 
-  await app.register(healthRoutes);
+  await app.register(rateLimit, {
+    max: 30,
+    timeWindow: '1 minute',
+    // /health queda exento — Railway lo pega constantemente.
+    allowList: (request) => request.url === '/health',
+  });
 
-  // Placeholder para rutas de Fase B.
-  // await app.register(profileRoutes, { prefix: '/api/v1/profiles' });
+  await app.register(healthRoutes);
+  await app.register(profileRoutes, { prefix: '/api/v1/profiles' });
 
   try {
     const address = await app.listen({

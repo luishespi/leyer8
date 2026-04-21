@@ -1,6 +1,6 @@
 {
   "name": "leyer8-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Leyer8 — Backend Node.js para gestión de perfiles NextDNS",
   "main": "dist/index.js",
@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
+    "@fastify/rate-limit": "^10.2.1",
     "dotenv": "^16.4.5",
     "fastify": "^5.1.0",
+    "firebase-admin": "^13.0.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

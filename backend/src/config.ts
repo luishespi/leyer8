@@ -8,9 +8,8 @@ import { z } from 'zod';
  * al arrancar con un mensaje claro — mejor eso que un runtime error opaco
  * tres pantallas adentro.
  *
- * Las variables de Fase B (NEXTDNS_API_KEY, FIREBASE_SERVICE_ACCOUNT) se
- * marcan como opcionales por ahora; se volverán requeridas cuando los
- * endpoints que las usan entren en producción.
+ * FASE B: NEXTDNS_API_KEY y FIREBASE_SERVICE_ACCOUNT ahora son requeridas.
+ * Sin ellas el backend no puede verificar tokens ni crear perfiles.
  */
 const envSchema = z.object({
   NODE_ENV: z
@@ -19,9 +18,11 @@ const envSchema = z.object({
 
   PORT: z.coerce.number().int().positive().default(3000),
 
-  // Fase B — opcionales por ahora.
-  NEXTDNS_API_KEY: z.string().optional(),
-  FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+  // NextDNS — token de la master account.
+  NEXTDNS_API_KEY: z.string().min(1, 'NEXTDNS_API_KEY es requerida'),
+
+  // Firebase — JSON de la Service Account en una sola línea.
+  FIREBASE_SERVICE_ACCOUNT: z.string().min(1, 'FIREBASE_SERVICE_ACCOUNT es requerida'),
 });
 
 const parsed = envSchema.safeParse(process.env);
